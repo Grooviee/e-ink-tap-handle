@@ -1,5 +1,5 @@
 
- <h1 align = "center">Beer handle e-ink</h1>
+ <h1 align = "center">Beer handle e-ink taphandle</h1>
 
 # Use PlatformIO
 1. Install the correct serial port driver [CP210X Driver](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers)
