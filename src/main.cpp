@@ -111,7 +111,7 @@ void setupWiFi(bool apMode)
             Serial.print(".");
             esp_restart();
         }
-        Serial.println(F("WiFi connected"));
+        Serial.println("WiFi connected");
         Serial.println("");
         Serial.println(WiFi.localIP());
     }
@@ -178,12 +178,12 @@ static void setupWebServer(void)
 
     server.onNotFound(asyncWebServerNotFoundCb);
 
-    MDNS.begin("ttgo");
+    MDNS.begin(MDNS_NAME);
 
     MDNS.addService("http", "tcp", 80);
 
     server.begin();
-    Serial.println('WebServer started');
+    Serial.println("WebServer started");
 }
 
 /****************************************************************
@@ -222,7 +222,7 @@ void setup()
     display.init();
     display.setRotation(1);
     display.setTextColor(GxEPD_BLACK);
-    display.setFont(DEFALUT_FONT);
+    display.setFont(DEFAULT_FONT);
 
     if (!FILESYSTEM.begin()) {
         Serial.println("FILESYSTEM initialization error.");

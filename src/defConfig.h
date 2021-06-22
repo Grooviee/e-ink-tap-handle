@@ -8,7 +8,9 @@
 
 #define START_WIFI_AP                   1
 
+#define DEFAULT_FONT                    &FreeSans9pt7b
 
+#define MDNS_NAME                       "ttgo"
 // ArduinoJson
 // RAM:   [==        ]  16.2% (used 53104 bytes from 327680 bytes)
 // Flash: [========  ]  78.8% (used 1033389 bytes from 1310720 bytes)
