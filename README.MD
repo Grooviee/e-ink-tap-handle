@@ -1,6 +1,8 @@
 
  <h1 align = "center">Beer handle e-ink taphandle</h1>
 
+![](images/1.jpg)
+
 # Use PlatformIO
 1. Install the correct serial port driver [CP210X Driver](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers)
 2. a. For the first use, you need to select the model you are using at the top of `main.cpp`, and select the corresponding screen header file
