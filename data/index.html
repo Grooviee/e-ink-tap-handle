@@ -1,177 +1,52 @@
-<!DOCTYPE html />
 <html>
 	<head>
 		<meta charset="utf-8" />
-		<title>TTGO</title>
+		<title>E-ink TapHandle</title>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+			rel="stylesheet"
+			integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+			crossorigin="anonymous"
+		/>
 		<link rel="stylesheet" href="css/main.css" />
+		<script type="text/javascript" src="js/jquery.min.js"></script>
+		<script type="text/javascript" src="js/main.js"></script>
 	</head>
 	<body>
-		<br /><br />
-		<br /><br />
 		<div class="content">
-			<div class="register-box">
-				<div class="wrap">
-					<div class="register-box-con2">
-						<!--Avatar  -->
-						<div class="register-box-con2-box clearfix mar-bottom20">
-							<label class="register-box-con2-box-left">
-								<em class="bitian"></em> Image
-							</label>
-							<div class="register-box-con2-box-right">
-								<label class="register-box-con2-box-upload">
-									<input
-										type="file"
-										name="file"
-										id="reg_info_file"
-										onchange="showPicture(this)"
-									/>
-									<div class="register-box-con2-box-upload-ti">
-										<em id="reg_info_file_w">Upload</em>
-										<img id="reg_info_file_base64" style="display: none" />
-									</div>
-								</label>
-								<label class="err err-top160" id="reg_info_file_text">
-									Support image format BMP, the image size does not exceed 2M
-								</label>
+			<div class="container">
+				<div class="row">
+					<div class="col-2">Image</div>
+					<div class="col-10">
+						<label class="image_upload">
+							<input
+								type="file"
+								name="file"
+								id="image_input"
+								accept="image/bmp"
+								onchange="showPicture(this)"
+							/>
+							<div class="image_display">
+								<em id="image_w">Upload</em>
+								<img id="image_base64" style="display: none" />
 							</div>
-						</div>
-
-						<div class="register-box-con2-box clearfix mar-bottom20 mar-top50">
-							<label class="register-box-con2-box-left"></label>
-							<div class="register-box-con2-box-right">
-								<input
-									type="submit"
-									value="commit"
-									class="login-box-cen-form-button w380"
-									id="reg_info_submit"
-								/>
-							</div>
-						</div>
+						</label>
+						<label class="err err-top160" id="image_error_text">
+							Support image format BMP, the image size does not exceed 2M
+						</label>
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-12 justify-content-center d-flex">
+						<input
+							type="submit"
+							value="Save"
+							class="btn btn-primary"
+							id="reg_info_submit"
+						/>
 					</div>
 				</div>
 			</div>
 		</div>
-		<br /><br />
-
-		<div id="uploader"></div>
-		<br /><br />
-		<script type="text/javascript" src="js/jquery.min.js"></script>
-		<script type="text/javascript" src="js/tbdValidate.js"></script>
-		<script type="text/javascript">
-			tbdValidate([], {
-				elesubmit: "reg_info_submit",
-				funsubmit: function () {
-					if ($("#reg_info_file_base64").attr("src")) {
-						$("#reg_info_file_text").hide();
-					} else {
-						$("#reg_info_file_text").html("please upload image").show();
-						return false;
-					}
-
-					var formData = new FormData();
-					var reg_info_file = document.getElementById("reg_info_file");
-					var file = reg_info_file.files[0];
-					formData.append("data", reg_info_file.files[0]);
-
-					$.ajax({
-						url: "/",
-						type: "POST",
-						cache: false,
-						data: formData,
-						processData: false,
-						contentType: false,
-						dataType: file.type,
-						beforeSend: function () {
-							console.log("upload start");
-						},
-						success: function (data) {
-							console.log("success upload");
-						},
-					});
-					alert("image uploaded");
-				},
-			});
-
-			//bmp and qr code uplaod
-			function showPicture(obj) {
-				var reg_info_file = document.getElementById("reg_info_file");
-				var file = reg_info_file.files[0];
-
-				var f = obj.files[0];
-				if (/bmp/.test(f.type)) {
-					$("reg_info_file_text").hide();
-				} else {
-					$("#reg_info_file_text").html("Only support image format BMP").show();
-					alert("Only BMP image supported");
-					return false;
-				}
-				if (f.size >= 500 * 1024) {
-					console.log("file size exceed: " + f.size + " >= " + 500 * 1024);
-					$("#reg_info_file_text")
-						.html("Image size does not exceed 500Kb")
-						.show();
-					alert("Only image smaller than 500Kb supported");
-					return false;
-				}
-
-				var baseID = "#reg_info_file_base64";
-				var hideID = "#reg_info_file_w";
-				var fr = new FileReader();
-				fr.readAsDataURL(f);
-
-				$(baseID).removeAttr("width");
-				$(baseID).removeAttr("height");
-				fr.onloadend = function (e) {
-					$(hideID).hide();
-					$(baseID).show();
-					$(baseID).attr("src", e.target.result);
-					$(baseID)[0].onload = function () {
-						var upimgw = $(baseID).width();
-						var upimgh = $(baseID).height();
-						$(baseID).attr("width", imgPercentScale(98, 165, upimgw, upimgh).w);
-						$(baseID).attr(
-							"height",
-							imgPercentScale(98, 165, upimgw, upimgh).h
-						);
-					};
-				};
-			}
-
-			function imgPercentScale(boxw, boxh, imgw, imgh) {
-				var res = {};
-				var wper = imgw / boxw;
-				var hper = imgh / boxh;
-				if (wper <= 1 && hper < 1) {
-					res.w = imgw;
-					res.h = imgh;
-					return res;
-				}
-				if (wper > 1 && hper < 1) {
-					res.w = boxw;
-					var rhper = boxw / imgw;
-					res.h = imgh * rhper;
-					return res;
-				}
-				if (wper <= 1 && hper > 1) {
-					res.h = boxh;
-					var rwper = boxh / imgh;
-					res.w = imgw * rwper;
-					return res;
-				}
-				if (wper > 1 && hper > 1) {
-					if (wper >= hper) {
-						res.w = boxw;
-						var rhper = boxw / imgw;
-						res.h = imgh * rhper;
-						return res;
-					} else {
-						res.h = boxh;
-						var rwper = boxh / imgh;
-						res.w = imgw * rwper;
-						return res;
-					}
-				}
-			}
-		</script>
 	</body>
 </html>
