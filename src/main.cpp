@@ -23,8 +23,12 @@
 #include <GxEPD.h>
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
+#include <Fonts/FreeSerif9pt7b.h>
+#include <Fonts/FreeSerif12pt7b.h>
 #include <Fonts/FreeSerif18pt7b.h>
+#include <Fonts/FreeSerifBold9pt7b.h>
 #include <Fonts/FreeSerifBold12pt7b.h>
+#include <Fonts/FreeSerifBold18pt7b.h>
 #include <Fonts/FreeSansBold12pt7b.h>
 #include <Fonts/FreeSansOblique12pt7b.h>
 
@@ -52,9 +56,9 @@
 // old panel
 // #include <GxGDEH0213B72/GxGDEH0213B72.h>  // 2.13" b/w old panel
 // #include <GxGDEH0213B73/GxGDEH0213B73.h>  // 2.13" b/w old panel
-// #include <GxGDE0213B72B/GxGDE0213B72B.h> // 2.13" b/w           GxGDE0213B72 升级版本 默认LilyGO的出厂屏幕都是这种
+#include <GxGDE0213B72B/GxGDE0213B72B.h> // 2.13" b/w (blauwe tap) GxGDE0213B72 升级版本 默认LilyGO的出厂屏幕都是这种
 
-#include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP
+// #include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP (zwarte tap)
 
 // #include <GxGDEM0213B74/GxGDEM0213B74.h>  // 2.13" b/w  form GoodDisplay 4-color
 
@@ -76,6 +80,7 @@ enum {
 };
 
 typedef struct {
+    char useimage[32];
     char beername[64];
     char style[64];
     char abv[32];
@@ -88,15 +93,19 @@ AsyncWebServer          server(80);
 GxIO_Class              io(SPI,  EPD_CS, EPD_DC,  EPD_RSET);
 GxEPD_Class             display(io, EPD_RSET, EPD_BUSY);
 Beer_Info_t             info;
+AceButton               *btnPtr = NULL;
 
 const uint8_t           btns[] = BUTTONS;
 const uint8_t           handle_btn_nums = sizeof(btns) / sizeof(*btns);
 
 
-
 extern void drawBitmap(GxEPD &display, const char *filename, int16_t x, int16_t y, bool with_color);
 extern void createQrCode(GxEPD &display, String message);
 void showBeerImage(void);
+void saveBeerInfo(Beer_Info_t *info);
+bool loadBeerInfo(Beer_Info_t *info);
+void loadDefaultInfo(void);
+void setupWiFi(bool apMode);
 
 /****************************************************
   ____                   _____        __
@@ -124,16 +133,6 @@ void saveBeerInfo(Beer_Info_t *info)
     file.write((uint8_t *)str, strlen(str));
     file.close();
     cJSON_Delete(root);
-}
-
-void loadDefaultInfo(void)
-{
-    strlcpy(info.beername, "Tuinhop",       sizeof(info.beername));
-    strlcpy(info.style,    "DIPA",          sizeof(info.style));
-    strlcpy(info.abv,      "7.2 %",         sizeof(info.abv));
-    strlcpy(info.ibu,      "105 IBU",       sizeof(info.ibu));
-    strlcpy(info.link,     "https://untappd.com/qr/beer/2312755/", sizeof(info.link));
-    saveBeerInfo(&info);
 }
 
 bool loadBeerInfo(Beer_Info_t *info)
@@ -166,9 +165,24 @@ bool loadBeerInfo(Beer_Info_t *info)
     if (cJSON_GetObjectItem(root, "link")->valuestring) {
         strlcpy(info->link, cJSON_GetObjectItem(root, "link")->valuestring, sizeof(info->link));
     }
+    if (cJSON_GetObjectItem(root, "useimage")->valuestring) {
+        strlcpy(info->useimage, cJSON_GetObjectItem(root, "useimage")->valuestring, sizeof(info->useimage));
+    }
+
     file.close();
     cJSON_Delete(root);
     return true;
+}
+
+
+void loadDefaultInfo(void)
+{
+    strlcpy(info.beername, "Rooie Rakker",       sizeof(info.beername));
+    strlcpy(info.style,    "Am. Amber Ale",          sizeof(info.style));
+    strlcpy(info.abv,      "5.4 %",         sizeof(info.abv));
+    strlcpy(info.ibu,      "45 IBU",       sizeof(info.ibu));
+    strlcpy(info.link,     "https://untappd.com/qr/beer/3093192/", sizeof(info.link));
+    saveBeerInfo(&info);
 }
 
 /****************************************************
@@ -259,6 +273,8 @@ static void asyncWebServerDataPostCb(AsyncWebServerRequest *request)
             strlcpy(info.ibu, params.c_str(), sizeof(info.ibu));
         } else if (name == "link") {
             strlcpy(info.link, params.c_str(), sizeof(info.link));
+        } else if (name == "useimage") {
+            strlcpy(info.useimage, params.c_str(), sizeof(info.useimage));
         }
     }
 
@@ -319,10 +335,27 @@ static void displayText(const char *str, int16_t y, uint8_t align)
     display.setCursor(x, y);
     display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
     // @TODO: lower fontsize if too wide
-    //if (w > 120) {
-    //  display.setFont();
-    //  display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
-    //}
+    if (w > 120 || h > 30) {
+        display.setFont(&FreeSerif12pt7b);
+        display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
+    }
+    if (w > 120 || h > 30) {
+        display.setFont(&FreeSerifBold12pt7b);
+        display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
+    }
+    if (w > 120 || h > 30) {
+        display.setFont(&FreeSerif12pt7b);
+        display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
+    }
+    if (w > 120 || h > 30) {
+        display.setFont(&FreeSerifBold9pt7b);
+        display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
+    }
+    if (w > 120 || h > 30) {
+        display.setFont(&FreeSerif9pt7b);
+        display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
+    }
+    Serial.printf("w: %u h: %u\n", w, h);
     switch (align) {
     case GxEPD_ALIGN_RIGHT:
         display.setCursor(display.width() - w - x1, y);
@@ -352,7 +385,7 @@ void showBeerInfo(void)
 {
     display.setRotation(0);
     display.fillScreen(GxEPD_WHITE);
-    display.setFont(&FreeSerif18pt7b);
+    display.setFont(&FreeSerifBold18pt7b);
     displayText(info.beername, 30, GxEPD_ALIGN_CENTER);
     displayText(info.style, 65, GxEPD_ALIGN_CENTER);
     display.setFont(&FreeSerifBold12pt7b);
@@ -362,6 +395,68 @@ void showBeerInfo(void)
     createQrCode(display, info.link, 0, 135);
     display.update();
 }
+
+/****************************************************
+                   ____        _   _
+     /\           |  _ \      | | | |
+    /  \   ___ ___| |_) |_   _| |_| |_ ___  _ __
+   / /\ \ / __/ _ \  _ <| | | | __| __/ _ \| '_ \
+  / ____ \ (_|  __/ |_) | |_| | |_| || (_) | | | |
+ /_/    \_\___\___|____/ \__,_|\__|\__\___/|_| |_|
+****************************************************/
+
+static void socEnterSleepMode(void)
+{
+    esp_sleep_enable_ext1_wakeup(((uint64_t)(((uint64_t)1) << BUTTON_1)), ESP_EXT1_WAKEUP_ALL_LOW);
+    Serial.println("Going to sleep now");
+    delay(2000);
+    esp_deep_sleep_start();
+}
+
+
+static void singleButtonHandleCb(uint8_t event)
+{
+    if (event == 0) {
+        showBeerInfo();
+    } else if (event == AceButton::kEventLongPressed) {
+        socEnterSleepMode();
+    }
+}
+
+
+static void aceButtonHandleEventCb(AceButton *b, uint8_t event, uint8_t state)
+{
+    Serial.printf("Pin:%d event:%u state:%u\n", b->getPin(), event, state);
+    singleButtonHandleCb(event);
+}
+
+static void setupButton(void)
+{
+    if (btnPtr) {
+        return;
+    }
+    btnPtr = new  AceButton [handle_btn_nums];
+    for (int i = 0; i < handle_btn_nums; ++i) {
+        pinMode(btns[i], INPUT);
+        btnPtr[i].init(btns[i]);
+        ButtonConfig *buttonConfig = btnPtr[i].getButtonConfig();
+        buttonConfig->setEventHandler(aceButtonHandleEventCb);
+        buttonConfig->setFeature(ButtonConfig::kFeatureLongPress);
+        buttonConfig->setFeature(ButtonConfig::kFeatureSuppressAfterLongPress);
+        buttonConfig->setFeature(ButtonConfig::kFeatureClick);
+    }
+}
+
+static void aceButtonLoop(void)
+{
+    if (!btnPtr) {
+        return;
+    }
+    for (int i = 0; i < handle_btn_nums; ++i) {
+        btnPtr[i].check();
+    }
+}
+
 
 
 
@@ -393,16 +488,17 @@ void setup()
         display.update();
         FILESYSTEM.begin(true);
     }
+    setupButton();
 
-    if (!loadBeerInfo(&info)) {
+    // if (!loadBeerInfo(&info)) {
         loadDefaultInfo();
-    }
+    // }
 
-    if (SHOW_IMAGE) {
-        showBeerImage();
-    } else {
+    // if (info.useimage) {
+        // showBeerImage();
+    // } else {
         showBeerInfo();
-    }
+    // }
 
     setupWiFi(START_WIFI_AP);
 
@@ -412,7 +508,8 @@ void setup()
 
 void loop()
 {
-    // aceButtonLoop();
+    // showBeerInfo()
+    aceButtonLoop();
 }
 
 

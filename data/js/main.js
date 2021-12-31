@@ -1,37 +1,73 @@
-function onSubmit() {
-  var formData = new FormData();
-  var image_file = document.getElementById("image_input");
-  var file = image_file.files[0];
-
-  if (/bmp/.test(file.type)) {
-    $("#image_error_text").hide();
-  } else {
-    $("#image_error_text").html("Only support image format BMP").show();
-    return false;
-  }
-  if (file.size >= 500 * 1024) {
-    $("#image_error_text").html("Image size does not exceed 500Kb").show();
-    return false;
-  }
-
-  formData.append("data", file);
-
-  $.ajax({
-    url: "/",
-    type: "POST",
-    cache: false,
-    data: formData,
-    processData: false,
-    contentType: false,
-    dataType: file.type,
-    beforeSend: function () {
-      console.log("upload start");
-    },
-    success: function (data) {
-      console.log("success upload");
-    },
+$(document).ready(function () {
+  $("form").on("submit", function (e) {
+    e.preventDefault();
   });
-  alert("image uploaded");
+});
+
+function onSubmit() {
+  var useimage = $('input[name="useimage"]:checked').val();
+
+  console.log(useimage == "false");
+  console.log(useimage == false);
+  if (useimage == "false") {
+    var formValue = $("form").serializeArray();
+    console.log(formValue);
+    $.ajax({
+      url: "/data",
+      type: "POST",
+      cache: false,
+      data: formValue,
+      processData: false,
+      contentType: false,
+      beforeSend: function () {
+        console.log("upload start");
+      },
+      success: function (data) {
+        console.log("success save");
+      },
+      error: function (error) {
+        console.log(error);
+      },
+    });
+    alert("data saved");
+  } else {
+    var formData = new FormData();
+
+    var image_file = document.getElementById("image_input");
+    var file = image_file.files[0];
+    if (file == null) {
+      $("#image_error_text").html("Image file is required").show();
+      return false;
+    } else if (/bmp/.test(file.type)) {
+      $("#image_error_text").hide();
+    } else {
+      $("#image_error_text").html("Only support image format BMP").show();
+      return false;
+    }
+    if (file.size >= 500 * 1024) {
+      $("#image_error_text").html("Image size does not exceed 500Kb").show();
+      return false;
+    }
+
+    formData.append("data", file);
+
+    $.ajax({
+      url: "/",
+      type: "POST",
+      cache: false,
+      data: formData,
+      processData: false,
+      contentType: false,
+      dataType: file.type,
+      beforeSend: function () {
+        console.log("upload start");
+      },
+      success: function (data) {
+        console.log("success upload");
+      },
+    });
+    alert("image uploaded");
+  }
 }
 
 function showPicture(obj) {

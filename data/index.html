@@ -2,51 +2,84 @@
 	<head>
 		<meta charset="utf-8" />
 		<title>E-ink TapHandle</title>
-		<link
-			href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
-			rel="stylesheet"
-			integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
-			crossorigin="anonymous"
-		/>
+		<link href="css/bootstrap.min.css" rel="stylesheet" />
 		<link rel="stylesheet" href="css/main.css" />
 		<script type="text/javascript" src="js/jquery.min.js"></script>
 		<script type="text/javascript" src="js/main.js"></script>
 	</head>
 	<body>
 		<div class="content">
-			<div class="container">
-				<div class="row">
-					<div class="col-2">Image</div>
-					<div class="col-10">
-						<label class="image_upload">
+			<form id="form" onsubmit="onSubmit()">
+				<div class="container">
+					<div class="row mb-4">
+						<div class="col-2">Type</div>
+						<div class="col-10">
+							<label>
+								<input type="radio" name="useimage" value="true" /> Use image
+							</label>
+							<label>
+								<input type="radio" name="useimage" value="false" /> Use info
+							</label>
+						</div>
+					</div>
+					<div class="row mb-4">
+						<div class="col-2">Beername</div>
+						<div class="col-10">
+							<input type="text" name="beername" class="" />
+						</div>
+					</div>
+					<div class="row mb-4">
+						<div class="col-2">Style</div>
+						<div class="col-10"><input type="text" name="style" /></div>
+					</div>
+					<div class="row mb-4">
+						<div class="col-2">ABV</div>
+						<div class="col-10">
+							<input type="number" name="abv" step="0.1" min="0" />
+						</div>
+					</div>
+					<div class="row mb-4">
+						<div class="col-2">IBU</div>
+						<div class="col-10"><input type="number" name="ibu" min="0" /></div>
+					</div>
+					<div class="row mb-4">
+						<div class="col-2">Link</div>
+						<div class="col-10"><input type="text" name="link" /></div>
+					</div>
+
+					<div class="row">
+						<div class="col-2">Image</div>
+						<div class="col-10">
+							<label class="image_upload">
+								<input
+									type="file"
+									name="file"
+									id="image_input"
+									accept="image/bmp"
+									onchange="showPicture(this)"
+								/>
+								<div class="image_display">
+									<em id="image_w">Upload</em>
+									<img id="image_base64" style="display: none" />
+								</div>
+							</label>
+							<label class="err err-top160" id="image_error_text">
+								Support image format BMP, the image size does not exceed 2M
+							</label>
+						</div>
+					</div>
+					<div class="row">
+						<div class="col-12 justify-content-center d-flex">
 							<input
-								type="file"
-								name="file"
-								id="image_input"
-								accept="image/bmp"
-								onchange="showPicture(this)"
+								type="submit"
+								value="Save"
+								class="btn btn-primary"
+								id="reg_info_submit"
 							/>
-							<div class="image_display">
-								<em id="image_w">Upload</em>
-								<img id="image_base64" style="display: none" />
-							</div>
-						</label>
-						<label class="err err-top160" id="image_error_text">
-							Support image format BMP, the image size does not exceed 2M
-						</label>
+						</div>
 					</div>
 				</div>
-				<div class="row">
-					<div class="col-12 justify-content-center d-flex">
-						<input
-							type="submit"
-							value="Save"
-							class="btn btn-primary"
-							id="reg_info_submit"
-						/>
-					</div>
-				</div>
-			</div>
+			</form>
 		</div>
 	</body>
 </html>
