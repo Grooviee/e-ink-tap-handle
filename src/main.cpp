@@ -228,33 +228,6 @@ void setupWiFi(bool apMode)
      \/  \/ \___|_.__/_____/ \___|_|    \_/ \___|_|
 
 ****************************************************************/
-static void asyncWebServerFileUploadCb(AsyncWebServerRequest *request, const String &filename,
-                                       size_t index, uint8_t *data, size_t len, bool final)
-{
-    static File file;
-    if (!index) {
-        Serial.printf("UploadStart: %s\n", filename.c_str());
-        file = FILESYSTEM.open(DEFAULT_IMAGE_BMP, FILE_WRITE);
-        if (!file) {
-            Serial.println("Open FAIL");
-            request->send(500, "text/plain", "hander error");
-            return;
-        }
-    }
-    if (file.write(data, len) != len) {
-        Serial.println("Write fail");
-        request->send(500, "text/plain", "hander error");
-        file.close();
-        return;
-    }
-
-    if (final) {
-        Serial.printf("UploadEnd: %s (%u)\n", filename.c_str(), index + len);
-        file.close();
-        request->send(200, "text/plain", "");
-        showBeerImage();
-    }
-}
 
 static void asyncWebServerDataPostCb(AsyncWebServerRequest *request)
 {
@@ -322,8 +295,6 @@ static void setupWebServer(void)
     server.on("/data", HTTP_POST, asyncWebServerDataPostCb);
     server.on("/info", HTTP_GET, asyncWebServerDataGetBeerInfoCb);
 
-    server.onFileUpload(asyncWebServerFileUploadCb);
-
     server.onNotFound(asyncWebServerNotFoundCb);
 
     MDNS.begin(MDNS_NAME);
@@ -388,14 +359,6 @@ static void displayText(const char *str, int16_t y, uint8_t align)
         break;
     }
     display.println(str);
-}
-
-void showBeerImage(void)
-{
-    display.setRotation(0);
-    display.fillScreen(GxEPD_WHITE);
-    drawBitmap(display, DEFAULT_IMAGE_BMP, 0, 0, true);
-    display.update();
 }
 
 
