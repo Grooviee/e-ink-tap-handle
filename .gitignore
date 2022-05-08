@@ -2,3 +2,4 @@ build
 .vscode
 .pio
 .DS_Store
+src/defConfig.h

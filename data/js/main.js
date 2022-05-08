@@ -1,37 +1,38 @@
+$(document).ready(function () {
+  $("form").on("submit", function (e) {
+    e.preventDefault();
+  });
+  $.getJSON('/info', function (data) {
+    $.each(data, function(key, value){
+      $('[name='+key+']', $("form")).val(value);
+    });
+  });
+});
+
 function onSubmit() {
-  var formData = new FormData();
-  var image_file = document.getElementById("image_input");
-  var file = image_file.files[0];
-
-  if (/bmp/.test(file.type)) {
-    $("#image_error_text").hide();
-  } else {
-    $("#image_error_text").html("Only support image format BMP").show();
-    return false;
+  
+  var formValue = $("form").serializeArray();
+  let data = {};
+  for(let i = 0; i < formValue.length; i++) {
+    console.log(formValue[i]['name']);
+    data[formValue[i]['name']] = formValue[i]['value'];
   }
-  if (file.size >= 500 * 1024) {
-    $("#image_error_text").html("Image size does not exceed 500Kb").show();
-    return false;
-  }
-
-  formData.append("data", file);
-
   $.ajax({
-    url: "/",
+    url: "/data",
     type: "POST",
     cache: false,
-    data: formData,
-    processData: false,
-    contentType: false,
-    dataType: file.type,
+    data: data,
+    dataType: "json",
     beforeSend: function () {
       console.log("upload start");
     },
     success: function (data) {
-      console.log("success upload");
+      console.log("success save");
+    },
+    error: function (error) {
+      console.log(error);
     },
   });
-  alert("image uploaded");
 }
 
 function showPicture(obj) {

@@ -1,0 +1,12 @@
+#define FILESYSTEM SPIFFS
+
+#define BEER_CONFIG_FILE_NAME           "/beerinfo.dat"
+#define WIFI_SSID                       "Your own ssid"
+#define WIFI_PASSWORD                   "Your ssid password"
+
+#define START_WIFI_AP                   1
+
+#define DEFAULT_FONT                    &FreeSans9pt7b
+#define SHOW_IMAGE                      0
+
+#define MDNS_NAME                       "taphandle"
