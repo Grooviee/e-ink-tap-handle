@@ -23,6 +23,7 @@
 #include <GxEPD.h>
 #include <GxIO/GxIO_SPI/GxIO_SPI.h>
 #include <GxIO/GxIO.h>
+#include <Fonts/FreeSans9pt7b.h>
 #include <Fonts/FreeSerif9pt7b.h>
 #include <Fonts/FreeSerif12pt7b.h>
 #include <Fonts/FreeSerif18pt7b.h>
@@ -35,6 +36,8 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <AceButton.h>
+#include <AsyncJson.h>
+#include <ArduinoJson.h>
 
 #include "utilities.h"
 #include "defConfig.h"
@@ -56,9 +59,9 @@
 // old panel
 // #include <GxGDEH0213B72/GxGDEH0213B72.h>  // 2.13" b/w old panel
 // #include <GxGDEH0213B73/GxGDEH0213B73.h>  // 2.13" b/w old panel
-#include <GxGDE0213B72B/GxGDE0213B72B.h> // 2.13" b/w (blauwe tap) GxGDE0213B72 升级版本 默认LilyGO的出厂屏幕都是这种
+//#include <GxGDE0213B72B/GxGDE0213B72B.h> // 2.13" b/w (blauwe tap) GxGDE0213B72 升级版本 默认LilyGO的出厂屏幕都是这种
 
-// #include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP (zwarte tap)
+#include <GxDEPG0213BN/GxDEPG0213BN.h>    // 2.13" b/w  form DKE GROUP (zwarte tap)
 
 // #include <GxGDEM0213B74/GxGDEM0213B74.h>  // 2.13" b/w  form GoodDisplay 4-color
 
@@ -80,7 +83,6 @@ enum {
 };
 
 typedef struct {
-    char useimage[32];
     char beername[64];
     char style[64];
     char abv[32];
@@ -102,6 +104,7 @@ const uint8_t           handle_btn_nums = sizeof(btns) / sizeof(*btns);
 extern void drawBitmap(GxEPD &display, const char *filename, int16_t x, int16_t y, bool with_color);
 extern void createQrCode(GxEPD &display, String message);
 void showBeerImage(void);
+void showBeerInfo(void);
 void saveBeerInfo(Beer_Info_t *info);
 bool loadBeerInfo(Beer_Info_t *info);
 void loadDefaultInfo(void);
@@ -165,9 +168,6 @@ bool loadBeerInfo(Beer_Info_t *info)
     if (cJSON_GetObjectItem(root, "link")->valuestring) {
         strlcpy(info->link, cJSON_GetObjectItem(root, "link")->valuestring, sizeof(info->link));
     }
-    if (cJSON_GetObjectItem(root, "useimage")->valuestring) {
-        strlcpy(info->useimage, cJSON_GetObjectItem(root, "useimage")->valuestring, sizeof(info->useimage));
-    }
 
     file.close();
     cJSON_Delete(root);
@@ -177,11 +177,12 @@ bool loadBeerInfo(Beer_Info_t *info)
 
 void loadDefaultInfo(void)
 {
-    strlcpy(info.beername, "Rooie Rakker",       sizeof(info.beername));
-    strlcpy(info.style,    "Am. Amber Ale",          sizeof(info.style));
-    strlcpy(info.abv,      "5.4 %",         sizeof(info.abv));
-    strlcpy(info.ibu,      "45 IBU",       sizeof(info.ibu));
-    strlcpy(info.link,     "https://untappd.com/qr/beer/3093192/", sizeof(info.link));
+    Serial.println("Load default data");
+    strlcpy(info.beername, "Beer name",  sizeof(info.beername));
+    strlcpy(info.style,    "Beer style",      sizeof(info.style));
+    strlcpy(info.abv,      "5",              sizeof(info.abv));
+    strlcpy(info.ibu,      "25",             sizeof(info.ibu));
+    strlcpy(info.link,     "https://untappd.com/qr/beer/[BEERID]", sizeof(info.link));
     saveBeerInfo(&info);
 }
 
@@ -202,7 +203,7 @@ void setupWiFi(bool apMode)
         char    apName[64];
         WiFi.mode(WIFI_AP);
         WiFi.macAddress(mac);
-        sprintf(apName, "TTGO-TapHandle-%02X:%02X", mac[4], mac[5]);
+        sprintf(apName, "TapHandle-%02X:%02X", mac[4], mac[5]);
         WiFi.softAP(apName);
     } else {
         WiFi.mode(WIFI_STA);
@@ -257,7 +258,8 @@ static void asyncWebServerFileUploadCb(AsyncWebServerRequest *request, const Str
 
 static void asyncWebServerDataPostCb(AsyncWebServerRequest *request)
 {
-    request->send(200, "text/plain", "");
+    Serial.println("post data");
+    
     for (int i = 0; i < request->params(); i++) {
         String name = request->getParam(i)->name();
         String params = request->getParam(i)->value();
@@ -273,12 +275,28 @@ static void asyncWebServerDataPostCb(AsyncWebServerRequest *request)
             strlcpy(info.ibu, params.c_str(), sizeof(info.ibu));
         } else if (name == "link") {
             strlcpy(info.link, params.c_str(), sizeof(info.link));
-        } else if (name == "useimage") {
-            strlcpy(info.useimage, params.c_str(), sizeof(info.useimage));
         }
     }
 
     saveBeerInfo(&info);
+
+    request->send(200, "text/plain", "");
+
+    showBeerInfo();
+}
+
+static void asyncWebServerDataGetBeerInfoCb(AsyncWebServerRequest *request)
+{
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    DynamicJsonDocument root(1024);
+    
+    root["beername"] = info.beername;
+    root["style"] = info.style;
+    root["abv"] = round(String(info.abv).toFloat() * 10) / 10;
+    root["ibu"] = String(info.ibu).toInt();
+    root["link"] = info.link;
+    serializeJson(root, *response);
+    request->send(response);
 }
 
 static void asyncWebServerNotFoundCb(AsyncWebServerRequest *request)
@@ -302,6 +320,7 @@ static void setupWebServer(void)
     });
 
     server.on("/data", HTTP_POST, asyncWebServerDataPostCb);
+    server.on("/info", HTTP_GET, asyncWebServerDataGetBeerInfoCb);
 
     server.onFileUpload(asyncWebServerFileUploadCb);
 
@@ -334,7 +353,6 @@ static void displayText(const char *str, int16_t y, uint8_t align)
     uint16_t w = 0, h = 0;
     display.setCursor(x, y);
     display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
-    // @TODO: lower fontsize if too wide
     if (w > 120 || h > 30) {
         display.setFont(&FreeSerif12pt7b);
         display.getTextBounds(str, x, y, &x1, &y1, &w, &h);
@@ -389,8 +407,12 @@ void showBeerInfo(void)
     displayText(info.beername, 30, GxEPD_ALIGN_CENTER);
     displayText(info.style, 65, GxEPD_ALIGN_CENTER);
     display.setFont(&FreeSerifBold12pt7b);
-    displayText(info.abv, 95, GxEPD_ALIGN_CENTER);
-    displayText(info.ibu, 120, GxEPD_ALIGN_CENTER);
+    char abv[30];
+    sprintf(abv, "%.1f %%", String(info.abv).toFloat());
+    displayText(abv, 95, GxEPD_ALIGN_CENTER);
+    char ibu[30];
+    sprintf(ibu, "%.0f IBU", String(info.ibu).toFloat());
+    displayText(ibu, 120, GxEPD_ALIGN_CENTER);
     display.setFont(DEFAULT_FONT);
     createQrCode(display, info.link, 0, 135);
     display.update();
@@ -490,15 +512,11 @@ void setup()
     }
     setupButton();
 
-    // if (!loadBeerInfo(&info)) {
+    if (!loadBeerInfo(&info)) {
         loadDefaultInfo();
-    // }
+    }
 
-    // if (info.useimage) {
-        // showBeerImage();
-    // } else {
-        showBeerInfo();
-    // }
+    showBeerInfo();
 
     setupWiFi(START_WIFI_AP);
 
