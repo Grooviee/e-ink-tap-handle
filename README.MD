@@ -3,6 +3,9 @@
 
 ![](images/1.jpg)
 
+# STL
+The STL for the tap-handle can be found on [Printables](https://www.printables.com/model/180667-e-ink-taphandle)
+
 # Use PlatformIO
 1. Install the correct serial port driver [CP210X Driver](https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers)
 2. a. For the first use, you need to select the model you are using at the top of `main.cpp`, and select the corresponding screen header file
